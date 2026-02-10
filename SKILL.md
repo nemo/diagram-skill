@@ -1,7 +1,8 @@
 ---
-name: architecture-diagram
+name: flowtown
 description: Generate interactive architecture diagrams from codebases. Analyzes code and produces draggable Excalidraw diagrams via Mermaid flowcharts with live reload.
 triggers:
+  - flowtown
   - diagram
   - architecture
   - visualize
