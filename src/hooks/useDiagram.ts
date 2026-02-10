@@ -26,7 +26,7 @@ interface DiagramState {
   revision: number;
 }
 
-export function useDiagram(renderer: RendererType) {
+export function useDiagram(renderer: RendererType, sourceOverride?: string | null) {
   const revisionRef = useRef(0);
   const fetchIdRef = useRef(0);
   const [state, setState] = useState<DiagramState>({
@@ -36,6 +36,45 @@ export function useDiagram(renderer: RendererType) {
     diagramSource: null,
     revision: 0,
   });
+
+  const convertSource = useCallback(
+    async (source: string, id: number) => {
+      try {
+        let data: DiagramData;
+        if (renderer === "flow") {
+          const { nodes, edges } = await convertGraphToFlow(source);
+          data = { renderer: "flow", nodes, edges };
+        } else {
+          const { elements, files } = await convertGraph(source);
+          data = { renderer: "excalidraw", elements, files };
+        }
+
+        if (id !== fetchIdRef.current) return;
+
+        revisionRef.current += 1;
+        setState({
+          data,
+          error: null,
+          loading: false,
+          diagramSource: source,
+          revision: revisionRef.current,
+        });
+      } catch (parseError) {
+        if (id !== fetchIdRef.current) return;
+        setState((prev) => ({
+          ...prev,
+          data: null,
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
+          loading: false,
+          diagramSource: source,
+        }));
+      }
+    },
+    [renderer],
+  );
 
   const fetchAndConvert = useCallback(async () => {
     const thisId = ++fetchIdRef.current;
@@ -59,39 +98,7 @@ export function useDiagram(renderer: RendererType) {
       const source = await res.text();
       if (thisId !== fetchIdRef.current) return;
 
-      try {
-        let data: DiagramData;
-        if (renderer === "flow") {
-          const { nodes, edges } = await convertGraphToFlow(source);
-          data = { renderer: "flow", nodes, edges };
-        } else {
-          const { elements, files } = await convertGraph(source);
-          data = { renderer: "excalidraw", elements, files };
-        }
-
-        if (thisId !== fetchIdRef.current) return;
-
-        revisionRef.current += 1;
-        setState({
-          data,
-          error: null,
-          loading: false,
-          diagramSource: source,
-          revision: revisionRef.current,
-        });
-      } catch (parseError) {
-        if (thisId !== fetchIdRef.current) return;
-        setState((prev) => ({
-          ...prev,
-          data: null,
-          error:
-            parseError instanceof Error
-              ? parseError.message
-              : String(parseError),
-          loading: false,
-          diagramSource: source,
-        }));
-      }
+      await convertSource(source, thisId);
     } catch (fetchError) {
       if (thisId !== fetchIdRef.current) return;
       setState((prev) => ({
@@ -105,14 +112,27 @@ export function useDiagram(renderer: RendererType) {
         diagramSource: null,
       }));
     }
-  }, [renderer]);
+  }, [convertSource]);
 
+  // When sourceOverride changes, convert it directly instead of fetching
   useEffect(() => {
-    fetchAndConvert();
-  }, [fetchAndConvert]);
+    if (sourceOverride != null) {
+      const thisId = ++fetchIdRef.current;
+      setState((prev) => ({ ...prev, loading: true }));
+      convertSource(sourceOverride, thisId);
+    }
+  }, [sourceOverride, convertSource]);
 
-  // Listen for HMR updates from Vite plugin
+  // Fetch from server when no override
   useEffect(() => {
+    if (sourceOverride == null) {
+      fetchAndConvert();
+    }
+  }, [sourceOverride, fetchAndConvert]);
+
+  // Listen for HMR updates from Vite plugin (only when live)
+  useEffect(() => {
+    if (sourceOverride != null) return;
     if (import.meta.hot) {
       const handler = () => {
         fetchAndConvert();
@@ -122,7 +142,7 @@ export function useDiagram(renderer: RendererType) {
         import.meta.hot!.off("diagram:update", handler);
       };
     }
-  }, [fetchAndConvert]);
+  }, [sourceOverride, fetchAndConvert]);
 
   return state;
 }

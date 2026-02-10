@@ -1,34 +1,74 @@
+import { useState, useCallback } from "react";
 import { useDiagram, type RendererType } from "./hooks/useDiagram";
 import { DiagramViewer } from "./components/DiagramViewer";
 import { FlowViewer } from "./components/FlowViewer";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { LoadingDisplay } from "./components/LoadingDisplay";
+import { HistorySidebar } from "./components/HistorySidebar";
 
-function getRenderer(): RendererType {
+function getInitialRenderer(): RendererType {
   const params = new URLSearchParams(window.location.search);
   const r = params.get("renderer");
   return r === "excalidraw" ? "excalidraw" : "flow";
 }
 
 export default function App() {
-  const renderer = getRenderer();
-  const { data, error, loading, diagramSource } = useDiagram(renderer);
+  const [renderer, setRenderer] = useState<RendererType>(getInitialRenderer);
+  const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
+  const [sourceOverride, setSourceOverride] = useState<string | null>(null);
 
-  if (loading) {
-    return <LoadingDisplay hasDiagram={false} />;
-  }
+  const { data, error, loading, diagramSource } = useDiagram(renderer, sourceOverride);
 
-  if (error) {
-    return <ErrorDisplay error={error} diagramSource={diagramSource} />;
-  }
+  const handleLoad = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/history/${encodeURIComponent(id)}/download`);
+      if (res.ok) {
+        const source = await res.text();
+        setActiveDiagramId(id);
+        setSourceOverride(source);
+      }
+    } catch {
+      // ignore fetch errors
+    }
+  }, []);
 
-  if (!data) {
-    return <LoadingDisplay hasDiagram={false} />;
-  }
+  const handleLoadLive = useCallback(() => {
+    setActiveDiagramId(null);
+    setSourceOverride(null);
+  }, []);
 
-  if (data.renderer === "flow") {
-    return <FlowViewer nodes={data.nodes} edges={data.edges} />;
-  }
+  const renderDiagram = () => {
+    if (loading) {
+      return <LoadingDisplay hasDiagram={false} />;
+    }
 
-  return <DiagramViewer elements={data.elements} files={data.files} />;
+    if (error) {
+      return <ErrorDisplay error={error} diagramSource={diagramSource} />;
+    }
+
+    if (!data) {
+      return <LoadingDisplay hasDiagram={false} />;
+    }
+
+    if (data.renderer === "flow") {
+      return <FlowViewer nodes={data.nodes} edges={data.edges} />;
+    }
+
+    return <DiagramViewer elements={data.elements} files={data.files} />;
+  };
+
+  return (
+    <div className="app-layout">
+      <HistorySidebar
+        activeId={activeDiagramId}
+        onLoad={handleLoad}
+        onLoadLive={handleLoadLive}
+        renderer={renderer}
+        onRendererChange={setRenderer}
+      />
+      <div className="diagram-panel">
+        {renderDiagram()}
+      </div>
+    </div>
+  );
 }
