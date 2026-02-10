@@ -1,5 +1,6 @@
 plans
 node_modules
 dist
+diagram.json
 diagram.mermaid
 .playwright-mcp

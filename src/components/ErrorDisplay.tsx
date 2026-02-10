@@ -1,17 +1,17 @@
 interface ErrorDisplayProps {
   error: string;
-  mermaidSource: string | null;
+  diagramSource: string | null;
 }
 
-export function ErrorDisplay({ error, mermaidSource }: ErrorDisplayProps) {
+export function ErrorDisplay({ error, diagramSource }: ErrorDisplayProps) {
   return (
     <div className="error-container">
-      <h2>Diagram Parse Error</h2>
+      <h2>Diagram Error</h2>
       <pre className="error-message">{error}</pre>
-      {mermaidSource && (
+      {diagramSource && (
         <>
-          <h3>Raw Mermaid Source</h3>
-          <pre className="mermaid-source">{mermaidSource}</pre>
+          <h3>Raw Diagram Source</h3>
+          <pre className="diagram-source">{diagramSource}</pre>
         </>
       )}
     </div>

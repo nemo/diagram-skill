@@ -1,6 +1,6 @@
 ---
 name: flowtown
-description: Generate interactive architecture diagrams from codebases. Analyzes code and produces draggable Excalidraw diagrams via Mermaid flowcharts with live reload.
+description: Generate interactive architecture diagrams from codebases. Analyzes code and produces draggable Excalidraw diagrams with hierarchical layout via ELK.js and live reload.
 triggers:
   - flowtown
   - diagram
@@ -23,9 +23,9 @@ You are an expert at analyzing codebases and producing clear, interactive archit
 
 ## How This Skill Works
 
-This skill uses a Vite dev server with Excalidraw to render Mermaid flowcharts as interactive, draggable diagrams. You write Mermaid syntax to a file and the viewer live-reloads automatically.
+This skill uses a Vite dev server with Excalidraw to render architecture diagrams as interactive, draggable elements. You write a simple JSON graph definition to a file and the viewer auto-layouts it with ELK.js (Eclipse Layout Kernel) and renders it in Excalidraw with live reload.
 
-**Critical**: Only Mermaid **flowcharts** (`flowchart TD` or `flowchart LR`) produce interactive Excalidraw elements (draggable, editable nodes). All other diagram types (sequence, class, ER, etc.) render as static images. **Always use `flowchart TD` or `flowchart LR`.**
+All elements are fully interactive — nodes can be dragged, labels edited, and diagrams exported to PNG/SVG.
 
 ## Steps
 
@@ -41,57 +41,92 @@ Look for:
 - **Module boundaries**: `src/` subdirectories, packages in monorepos, import patterns
 - **Data flow**: API calls, state management, event systems
 
-### 2. Generate the Mermaid Flowchart
+### 2. Generate the Graph JSON
 
-Write a Mermaid flowchart to `<skill-dir>/diagram.mermaid`.
+Write a JSON graph definition to `<skill-dir>/diagram.json`.
 
 The file does not need to exist before starting the viewer — the viewer will show a "Waiting for diagram..." state until the file appears, then auto-render it.
 
-**Template:**
+**JSON Schema:**
 
-```mermaid
-flowchart TD
-    subgraph Client["Client Layer"]
-        UI[React App]
-        State[State Management]
-    end
-
-    subgraph API["API Layer"]
-        Router[API Router]
-        Auth[Auth Middleware]
-        Handlers[Request Handlers]
-    end
-
-    subgraph Data["Data Layer"]
-        DB[(Database)]
-        Cache[(Cache)]
-    end
-
-    UI -->|user actions| State
-    State -->|API calls| Router
-    Router --> Auth
-    Auth --> Handlers
-    Handlers -->|queries| DB
-    Handlers -->|read/write| Cache
+```json
+{
+  "direction": "DOWN",
+  "groups": [
+    {
+      "id": "group-id",
+      "label": "Group Display Name",
+      "children": ["node-id-1", "node-id-2"]
+    }
+  ],
+  "nodes": [
+    { "id": "node-id-1", "label": "Node Display Name" },
+    { "id": "node-id-2", "label": "Another Node" }
+  ],
+  "edges": [
+    { "from": "node-id-1", "to": "node-id-2", "label": "optional edge label" }
+  ]
+}
 ```
 
-**Mermaid Best Practices:**
+**Fields:**
 
-- Use `flowchart TD` (top-down) for layered architectures, `flowchart LR` (left-right) for pipelines
-- Use `subgraph Name["Display Label"]` to group related components
-- Use descriptive edge labels: `-->|"label"|`
-- Node shapes: `[rectangular]` for services, `[(cylindrical)]` for databases, `([stadium])` for external services, `{diamond}` for decisions, `[[subroutine]]` for utilities
-- Keep node IDs short but meaningful
+- `direction` (optional): `"DOWN"` (top-to-bottom, default) or `"RIGHT"` (left-to-right)
+- `groups` (optional): Colored containers that visually group related nodes. Each group lists the `children` node IDs it contains.
+- `nodes` (required): All nodes in the diagram. Must have at least one.
+- `edges` (optional): Connections between nodes. `label` is optional.
+
+**Template:**
+
+```json
+{
+  "direction": "DOWN",
+  "groups": [
+    {
+      "id": "client",
+      "label": "Client Layer",
+      "children": ["ui", "state"]
+    },
+    {
+      "id": "api",
+      "label": "API Layer",
+      "children": ["router", "auth", "handlers"]
+    },
+    {
+      "id": "data",
+      "label": "Data Layer",
+      "children": ["db", "cache"]
+    }
+  ],
+  "nodes": [
+    { "id": "ui", "label": "React App" },
+    { "id": "state", "label": "State Management" },
+    { "id": "router", "label": "API Router" },
+    { "id": "auth", "label": "Auth Middleware" },
+    { "id": "handlers", "label": "Request Handlers" },
+    { "id": "db", "label": "Database" },
+    { "id": "cache", "label": "Cache" }
+  ],
+  "edges": [
+    { "from": "ui", "to": "state", "label": "user actions" },
+    { "from": "state", "to": "router", "label": "API calls" },
+    { "from": "router", "to": "auth" },
+    { "from": "auth", "to": "handlers" },
+    { "from": "handlers", "to": "db", "label": "queries" },
+    { "from": "handlers", "to": "cache", "label": "read/write" }
+  ]
+}
+```
+
+**Best Practices:**
+
+- Use `"DOWN"` for layered architectures, `"RIGHT"` for pipelines/sequences
+- Use groups to visually cluster related components (frontend, backend, storage, etc.)
+- Use descriptive edge labels to show what flows between components
+- Keep node IDs short but meaningful (lowercase, no spaces)
 - Limit to 15-25 nodes for readability — focus on key components, not every file
-- Use consistent naming conventions (PascalCase for components, lowercase for actions)
-
-**Common Mermaid Pitfalls (avoid these):**
-
-- **Reserved words as node IDs**: Never use `end`, `graph`, `subgraph`, or `style` as a node ID — they are Mermaid keywords. Use `EndNode`, `GraphSvc`, etc. instead.
-- **Special characters in labels**: Quote labels containing parentheses, brackets, or special chars: `Node["My Label (v2)"]`
-- **Subgraph `end` matching**: Every `subgraph` must have a matching `end` on its own line.
-- **Empty subgraphs**: A subgraph with no nodes will cause a parse error. Always include at least one node.
-- **First line must be `flowchart TD` or `flowchart LR`**: Do NOT use `graph TD` — it produces the same output but `flowchart` is the modern syntax and what Excalidraw's parser expects.
+- Every node referenced in `groups.children` or `edges` must exist in `nodes`
+- A node can belong to at most one group. Nodes not in any group are placed standalone.
 
 ### 3. Start the Viewer
 
@@ -106,9 +141,9 @@ Tell the user: "The architecture diagram is now open at http://localhost:5174. Y
 
 ### 4. Iterate
 
-To update the diagram, overwrite `<skill-dir>/diagram.mermaid` with new content. The viewer live-reloads automatically — no need to restart the server or refresh the browser. User annotations and viewport position are preserved across updates.
+To update the diagram, overwrite `<skill-dir>/diagram.json` with new content. The viewer live-reloads automatically — no need to restart the server or refresh the browser. User annotations and viewport position are preserved across updates.
 
-If the user asks for changes (e.g., "add the database layer", "show the auth flow"), update the mermaid file accordingly.
+If the user asks for changes (e.g., "add the database layer", "show the auth flow"), update the JSON file accordingly.
 
 ### 5. Cleanup
 
@@ -116,45 +151,80 @@ When the user is done with the diagram, stop the Vite dev server (Ctrl+C in the 
 
 ### 6. Troubleshooting
 
-If the diagram fails to render, the viewer displays the parse error along with the raw Mermaid source for debugging. Common fixes:
+If the diagram fails to render, the viewer displays the parse error along with the raw JSON source for debugging. Common fixes:
 
-- **"Parse error"**: Check that the first line is exactly `flowchart TD` or `flowchart LR`
-- **"Diagram already registered"**: This is handled automatically — just save the file again
-- **Blank viewer**: Ensure `diagram.mermaid` is not empty
-- **Nodes not draggable**: You used a non-flowchart diagram type (sequence, class, etc.) — rewrite as `flowchart`
-- Check for reserved-word node IDs (`end`, `graph`, `subgraph`, `style`)
-- Ensure labels with special characters are quoted: `Node["Label (with parens)"]`
-- Ensure every `subgraph` has a matching `end`
+- **Parse error**: Ensure the file is valid JSON (no trailing commas, proper quoting)
+- **Blank diagram**: Ensure `diagram.json` has at least one node in the `nodes` array
+- **Missing nodes**: Every node ID in `edges.from`, `edges.to`, and `groups.children` must have a matching entry in `nodes`
+- **Overlapping labels**: Keep node labels concise (under ~25 characters)
 
-The viewer auto-reloads on every save — fix the syntax in `diagram.mermaid` and it will retry automatically.
+The viewer auto-reloads on every save — fix the JSON and it will retry automatically.
 
 ### 7. Common Architecture Patterns
 
 **Microservices:**
-```mermaid
-flowchart LR
-    Gateway[API Gateway] --> ServiceA[Service A]
-    Gateway --> ServiceB[Service B]
-    ServiceA --> Queue[(Message Queue)]
-    Queue --> ServiceB
-    ServiceA --> DB_A[(DB A)]
-    ServiceB --> DB_B[(DB B)]
+```json
+{
+  "direction": "LR",
+  "groups": [
+    { "id": "services", "label": "Services", "children": ["svc_a", "svc_b"] },
+    { "id": "infra", "label": "Infrastructure", "children": ["queue", "db_a", "db_b"] }
+  ],
+  "nodes": [
+    { "id": "gateway", "label": "API Gateway" },
+    { "id": "svc_a", "label": "Service A" },
+    { "id": "svc_b", "label": "Service B" },
+    { "id": "queue", "label": "Message Queue" },
+    { "id": "db_a", "label": "DB A" },
+    { "id": "db_b", "label": "DB B" }
+  ],
+  "edges": [
+    { "from": "gateway", "to": "svc_a" },
+    { "from": "gateway", "to": "svc_b" },
+    { "from": "svc_a", "to": "queue", "label": "publish" },
+    { "from": "queue", "to": "svc_b", "label": "consume" },
+    { "from": "svc_a", "to": "db_a" },
+    { "from": "svc_b", "to": "db_b" }
+  ]
+}
 ```
 
 **Event-Driven:**
-```mermaid
-flowchart TD
-    Producer[Event Producer] -->|publish| Bus[Event Bus]
-    Bus -->|subscribe| ConsumerA[Consumer A]
-    Bus -->|subscribe| ConsumerB[Consumer B]
-    ConsumerA --> Store[(Event Store)]
+```json
+{
+  "direction": "DOWN",
+  "nodes": [
+    { "id": "producer", "label": "Event Producer" },
+    { "id": "bus", "label": "Event Bus" },
+    { "id": "consumer_a", "label": "Consumer A" },
+    { "id": "consumer_b", "label": "Consumer B" },
+    { "id": "store", "label": "Event Store" }
+  ],
+  "edges": [
+    { "from": "producer", "to": "bus", "label": "publish" },
+    { "from": "bus", "to": "consumer_a", "label": "subscribe" },
+    { "from": "bus", "to": "consumer_b", "label": "subscribe" },
+    { "from": "consumer_a", "to": "store" }
+  ]
+}
 ```
 
-**Layered/MVC:**
-```mermaid
-flowchart TD
-    View[Views / Templates] --> Controller[Controllers]
-    Controller --> Service[Service Layer]
-    Service --> Repository[Repository Layer]
-    Repository --> DB[(Database)]
+**Layered / MVC:**
+```json
+{
+  "direction": "DOWN",
+  "nodes": [
+    { "id": "view", "label": "Views / Templates" },
+    { "id": "controller", "label": "Controllers" },
+    { "id": "service", "label": "Service Layer" },
+    { "id": "repo", "label": "Repository Layer" },
+    { "id": "db", "label": "Database" }
+  ],
+  "edges": [
+    { "from": "view", "to": "controller" },
+    { "from": "controller", "to": "service" },
+    { "from": "service", "to": "repo" },
+    { "from": "repo", "to": "db" }
+  ]
+}
 ```

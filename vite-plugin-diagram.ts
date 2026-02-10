@@ -2,7 +2,7 @@ import { Plugin } from "vite";
 import fs from "node:fs";
 import path from "node:path";
 
-const DIAGRAM_FILE = "diagram.mermaid";
+const DIAGRAM_FILE = "diagram.json";
 const DEBOUNCE_MS = 150;
 
 export default function diagramPlugin(): Plugin {
@@ -12,14 +12,14 @@ export default function diagramPlugin(): Plugin {
     name: "vite-plugin-diagram",
 
     configureServer(server) {
-      // Serve diagram.mermaid at /api/diagram
+      // Serve diagram.json at /api/diagram
       server.middlewares.use((req, res, next) => {
         if (req.url !== "/api/diagram") return next();
 
         if (!fs.existsSync(diagramPath)) {
           res.statusCode = 404;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "No diagram.mermaid file found" }));
+          res.end(JSON.stringify({ error: "No diagram.json file found" }));
           return;
         }
 
@@ -29,17 +29,16 @@ export default function diagramPlugin(): Plugin {
         if (!content.trim()) {
           res.statusCode = 404;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ error: "diagram.mermaid is empty" }));
+          res.end(JSON.stringify({ error: "diagram.json is empty" }));
           return;
         }
 
-        res.setHeader("Content-Type", "text/plain");
+        res.setHeader("Content-Type", "application/json");
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         res.end(content);
       });
 
-      // Watch diagram.mermaid for changes with debounce to coalesce
-      // rapid filesystem events (editors often trigger multiple events per save)
+      // Watch diagram.json for changes with debounce
       let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
       const watcher = fs.watch(
@@ -52,7 +51,7 @@ export default function diagramPlugin(): Plugin {
               server.ws.send({ type: "custom", event: "diagram:update" });
             }, DEBOUNCE_MS);
           }
-        }
+        },
       );
 
       server.httpServer?.on("close", () => {

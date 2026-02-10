@@ -2,6 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 html,
@@ -58,7 +59,7 @@ body,
   font-size: 0.875rem;
 }
 
-.mermaid-source {
+.diagram-source {
   background: #f4f4f4;
   border: 1px solid #ccc;
   border-radius: 6px;

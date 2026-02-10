@@ -1,24 +1,39 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { convertMermaid, type ConvertedElements } from "../lib/mermaid-converter";
+import { convertGraph, type ConvertedElements } from "../lib/elk-converter";
+import { convertGraphToFlow, type FlowResult } from "../lib/reactflow-converter";
+
+export type RendererType = "excalidraw" | "flow";
+
+interface ExcalidrawData {
+  renderer: "excalidraw";
+  elements: ConvertedElements;
+  files: Record<string, unknown>;
+}
+
+interface FlowData {
+  renderer: "flow";
+  nodes: FlowResult["nodes"];
+  edges: FlowResult["edges"];
+}
+
+type DiagramData = ExcalidrawData | FlowData;
 
 interface DiagramState {
-  elements: ConvertedElements | null;
-  files: Record<string, unknown> | null;
+  data: DiagramData | null;
   error: string | null;
   loading: boolean;
-  mermaidSource: string | null;
+  diagramSource: string | null;
   revision: number;
 }
 
-export function useMermaidDiagram() {
+export function useDiagram(renderer: RendererType) {
   const revisionRef = useRef(0);
   const fetchIdRef = useRef(0);
   const [state, setState] = useState<DiagramState>({
-    elements: null,
-    files: null,
+    data: null,
     error: null,
     loading: true,
-    mermaidSource: null,
+    diagramSource: null,
     revision: 0,
   });
 
@@ -28,17 +43,15 @@ export function useMermaidDiagram() {
     try {
       const res = await fetch("/api/diagram");
 
-      // Stale response — a newer fetch was started
       if (thisId !== fetchIdRef.current) return;
 
       if (res.status === 404) {
         setState((prev) => ({
           ...prev,
-          elements: null,
-          files: null,
+          data: null,
           error: null,
           loading: false,
-          mermaidSource: null,
+          diagramSource: null,
         }));
         return;
       }
@@ -47,47 +60,52 @@ export function useMermaidDiagram() {
       if (thisId !== fetchIdRef.current) return;
 
       try {
-        const { elements, files } = await convertMermaid(source);
+        let data: DiagramData;
+        if (renderer === "flow") {
+          const { nodes, edges } = await convertGraphToFlow(source);
+          data = { renderer: "flow", nodes, edges };
+        } else {
+          const { elements, files } = await convertGraph(source);
+          data = { renderer: "excalidraw", elements, files };
+        }
+
         if (thisId !== fetchIdRef.current) return;
 
         revisionRef.current += 1;
         setState({
-          elements,
-          files,
+          data,
           error: null,
           loading: false,
-          mermaidSource: source,
+          diagramSource: source,
           revision: revisionRef.current,
         });
       } catch (parseError) {
         if (thisId !== fetchIdRef.current) return;
         setState((prev) => ({
           ...prev,
-          elements: null,
-          files: null,
+          data: null,
           error:
             parseError instanceof Error
               ? parseError.message
               : String(parseError),
           loading: false,
-          mermaidSource: source,
+          diagramSource: source,
         }));
       }
     } catch (fetchError) {
       if (thisId !== fetchIdRef.current) return;
       setState((prev) => ({
         ...prev,
-        elements: null,
-        files: null,
+        data: null,
         error:
           fetchError instanceof Error
             ? fetchError.message
             : String(fetchError),
         loading: false,
-        mermaidSource: null,
+        diagramSource: null,
       }));
     }
-  }, []);
+  }, [renderer]);
 
   useEffect(() => {
     fetchAndConvert();
