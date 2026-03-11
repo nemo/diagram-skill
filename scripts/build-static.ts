@@ -89,7 +89,7 @@ function main() {
 
   try {
     // 5. Run vite build with output directory override
-    const result = spawnSync("npx", ["vite", "build", "--outDir", resolvedOutputDir], {
+    const result = spawnSync("npx", ["vite", "build", "--base", "./", "--outDir", resolvedOutputDir], {
       cwd: SKILL_DIR,
       stdio: "inherit",
     });
