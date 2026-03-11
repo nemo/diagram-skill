@@ -92,6 +92,7 @@ function main() {
     const result = spawnSync("npx", ["vite", "build", "--base", "./", "--outDir", resolvedOutputDir], {
       cwd: SKILL_DIR,
       stdio: "inherit",
+      env: { ...process.env, DIAGRAM_STATIC: "1" },
     });
 
     if (result.status !== 0) {
