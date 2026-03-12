@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useHistory, type SavedDiagram } from "../hooks/useHistory";
 import type { RendererType } from "../hooks/useDiagram";
+import { THEMES } from "../lib/themes";
 import { RendererToggle } from "./RendererToggle";
 
 interface HistorySidebarProps {
@@ -9,10 +10,12 @@ interface HistorySidebarProps {
   onLoadLive: () => void;
   renderer: RendererType;
   onRendererChange: (r: RendererType) => void;
+  themeId: string;
+  onThemeChange: (id: string) => void;
   isStatic?: boolean;
 }
 
-export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange, isStatic }: HistorySidebarProps) {
+export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange, themeId, onThemeChange, isStatic }: HistorySidebarProps) {
   const { items, save, remove } = useHistory();
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -64,6 +67,19 @@ export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRende
       <div className="renderer-section">
         <div className="section-label">Diagram view mode</div>
         <RendererToggle renderer={renderer} onRendererChange={onRendererChange} />
+      </div>
+
+      <div className="theme-section">
+        <div className="section-label">Theme</div>
+        <select
+          className="theme-select"
+          value={themeId}
+          onChange={(e) => onThemeChange(e.target.value)}
+        >
+          {Object.values(THEMES).map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
       </div>
 
       {!isStatic && (

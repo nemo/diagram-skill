@@ -23,7 +23,7 @@ function LabeledGroupNode({ data }: NodeProps) {
           left: 14,
           fontSize: 20,
           fontWeight: 700,
-          color: "#495057",
+          color: (data as { labelColor?: string }).labelColor ?? "#495057",
           pointerEvents: "none",
         }}
       >
@@ -35,7 +35,7 @@ function LabeledGroupNode({ data }: NodeProps) {
 }
 
 function DescribedNode({ data }: NodeProps) {
-  const { label, description } = data as { label?: string; description?: string };
+  const { label, description, descriptionColor } = data as { label?: string; description?: string; descriptionColor?: string };
   return (
     <div
       style={{
@@ -55,7 +55,7 @@ function DescribedNode({ data }: NodeProps) {
         <div
           style={{
             fontSize: 11,
-            color: "#666",
+            color: descriptionColor ?? "#666",
             marginTop: 4,
             lineHeight: 1.3,
             textAlign: "center",
@@ -75,9 +75,10 @@ const nodeTypes = { labeledGroup: LabeledGroupNode, describedNode: DescribedNode
 interface FlowViewerProps {
   nodes: Node[];
   edges: Edge[];
+  miniMapColor?: string;
 }
 
-export function FlowViewer({ nodes, edges }: FlowViewerProps) {
+export function FlowViewer({ nodes, edges, miniMapColor }: FlowViewerProps) {
   const stableNodeTypes = useMemo(() => nodeTypes, []);
 
   return (
@@ -98,7 +99,7 @@ export function FlowViewer({ nodes, edges }: FlowViewerProps) {
           pannable
           nodeColor={(node: Node) => {
             const c = (node.data as Record<string, unknown>)?.color;
-            return typeof c === "string" ? c : "#e2e8f0";
+            return typeof c === "string" ? c : (miniMapColor ?? "#e2e8f0");
           }}
           style={{ width: 180, height: 120 }}
         />
