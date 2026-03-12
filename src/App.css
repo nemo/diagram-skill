@@ -92,6 +92,24 @@ body,
   font-weight: 600;
 }
 
+/* ─── Theme selector ─────────────────────────────────────── */
+
+.theme-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+}
+
+.theme-select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
 /* ─── Current diagram item ────────────────────────────────── */
 
 .current-item:not(.active) {

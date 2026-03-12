@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useHistory, type SavedDiagram } from "../hooks/useHistory";
 import type { RendererType } from "../hooks/useDiagram";
+import { THEMES } from "../lib/themes";
 
 interface HistorySidebarProps {
   activeId: string | null;
@@ -8,9 +9,11 @@ interface HistorySidebarProps {
   onLoadLive: () => void;
   renderer: RendererType;
   onRendererChange: (r: RendererType) => void;
+  themeId: string;
+  onThemeChange: (id: string) => void;
 }
 
-export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange }: HistorySidebarProps) {
+export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange, themeId, onThemeChange }: HistorySidebarProps) {
   const { items, save, remove } = useHistory();
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -75,6 +78,19 @@ export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRende
             Excalidraw
           </button>
         </div>
+      </div>
+
+      <div className="theme-section">
+        <div className="section-label">Theme</div>
+        <select
+          className="theme-select"
+          value={themeId}
+          onChange={(e) => onThemeChange(e.target.value)}
+        >
+          {Object.values(THEMES).map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="history-section-header">

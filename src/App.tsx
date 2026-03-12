@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDiagram, type RendererType } from "./hooks/useDiagram";
+import { useTheme } from "./hooks/useTheme";
 import { DiagramViewer } from "./components/DiagramViewer";
 import { FlowViewer } from "./components/FlowViewer";
 import { ErrorDisplay } from "./components/ErrorDisplay";
@@ -16,8 +17,9 @@ export default function App() {
   const [renderer, setRenderer] = useState<RendererType>(getInitialRenderer);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
   const [sourceOverride, setSourceOverride] = useState<string | null>(null);
+  const { themeId, theme, setThemeId } = useTheme();
 
-  const { data, error, loading, diagramSource } = useDiagram(renderer, sourceOverride);
+  const { data, error, loading, diagramSource } = useDiagram(renderer, sourceOverride, theme);
 
   const handleLoad = useCallback(async (id: string) => {
     try {
@@ -51,7 +53,7 @@ export default function App() {
     }
 
     if (data.renderer === "flow") {
-      return <FlowViewer nodes={data.nodes} edges={data.edges} />;
+      return <FlowViewer nodes={data.nodes} edges={data.edges} miniMapColor={theme.miniMapColor} />;
     }
 
     return <DiagramViewer elements={data.elements} files={data.files} />;
@@ -65,6 +67,8 @@ export default function App() {
         onLoadLive={handleLoadLive}
         renderer={renderer}
         onRendererChange={setRenderer}
+        themeId={themeId}
+        onThemeChange={setThemeId}
       />
       <div className="diagram-panel">
         {renderDiagram()}

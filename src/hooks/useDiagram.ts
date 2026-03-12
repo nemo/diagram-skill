@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { convertGraph, type ConvertedElements } from "../lib/elk-converter";
 import { convertGraphToFlow, type FlowResult } from "../lib/reactflow-converter";
+import type { DiagramTheme } from "../lib/themes";
 
 export type RendererType = "excalidraw" | "flow";
 
@@ -26,7 +27,10 @@ interface DiagramState {
   revision: number;
 }
 
-export function useDiagram(renderer: RendererType, sourceOverride?: string | null) {
+export function useDiagram(renderer: RendererType, sourceOverride?: string | null, theme?: DiagramTheme) {
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+  const lastSourceRef = useRef<string | null>(null);
   const revisionRef = useRef(0);
   const fetchIdRef = useRef(0);
   const [state, setState] = useState<DiagramState>({
@@ -39,13 +43,14 @@ export function useDiagram(renderer: RendererType, sourceOverride?: string | nul
 
   const convertSource = useCallback(
     async (source: string, id: number) => {
+      lastSourceRef.current = source;
       try {
         let data: DiagramData;
         if (renderer === "flow") {
-          const { nodes, edges } = await convertGraphToFlow(source);
+          const { nodes, edges } = await convertGraphToFlow(source, themeRef.current);
           data = { renderer: "flow", nodes, edges };
         } else {
-          const { elements, files } = await convertGraph(source);
+          const { elements, files } = await convertGraph(source, themeRef.current);
           data = { renderer: "excalidraw", elements, files };
         }
 
@@ -143,6 +148,15 @@ export function useDiagram(renderer: RendererType, sourceOverride?: string | nul
       };
     }
   }, [sourceOverride, fetchAndConvert]);
+
+  useEffect(() => {
+    const src = lastSourceRef.current;
+    if (src) {
+      const id = ++fetchIdRef.current;
+      convertSource(src, id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme]);
 
   return state;
 }
