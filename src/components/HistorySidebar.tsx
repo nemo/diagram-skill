@@ -13,9 +13,11 @@ interface HistorySidebarProps {
   themeId: string;
   onThemeChange: (id: string) => void;
   isStatic?: boolean;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange, themeId, onThemeChange, isStatic }: HistorySidebarProps) {
+export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRendererChange, themeId, onThemeChange, isStatic, collapsed, onToggleCollapse }: HistorySidebarProps) {
   const { items, save, remove } = useHistory();
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -63,26 +65,30 @@ export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRende
   const isLive = activeId === null;
 
   return (
-    <div className="history-sidebar">
-      <div className="renderer-section">
-        <div className="section-label">Diagram view mode</div>
-        <RendererToggle renderer={renderer} onRendererChange={onRendererChange} />
-      </div>
+    <div className={`history-sidebar ${collapsed ? "collapsed" : ""}`}>
+      {!collapsed && (
+        <>
+          <div className="renderer-section">
+            <div className="section-label">Diagram view mode</div>
+            <RendererToggle renderer={renderer} onRendererChange={onRendererChange} />
+          </div>
 
-      <div className="theme-section">
-        <div className="section-label">Theme</div>
-        <select
-          className="theme-select"
-          value={themeId}
-          onChange={(e) => onThemeChange(e.target.value)}
-        >
-          {Object.values(THEMES).map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-      </div>
+          <div className="theme-section">
+            <div className="section-label">Theme</div>
+            <select
+              className="theme-select"
+              value={themeId}
+              onChange={(e) => onThemeChange(e.target.value)}
+            >
+              {Object.values(THEMES).map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
 
-      {!isStatic && (
+      {!collapsed && !isStatic && (
         <>
           <div className="history-section-header">
             <span>Diagrams</span>
@@ -172,6 +178,11 @@ export function HistorySidebar({ activeId, onLoad, onLoadLive, renderer, onRende
           </div>
         </>
       )}
+      <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d={collapsed ? "M6 3l5 5-5 5V3z" : "M10 3L5 8l5 5V3z"} />
+        </svg>
+      </button>
     </div>
   );
 }

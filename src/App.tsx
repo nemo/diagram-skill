@@ -18,6 +18,7 @@ export default function App() {
   const [renderer, setRenderer] = useState<RendererType>(getInitialRenderer);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
   const [sourceOverride, setSourceOverride] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { themeId, theme, setThemeId } = useTheme();
   const isStaticMode = INLINE_DIAGRAM_JSON != null;
 
@@ -62,7 +63,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <HistorySidebar
         activeId={activeDiagramId}
         onLoad={handleLoad}
@@ -72,6 +73,8 @@ export default function App() {
         themeId={themeId}
         onThemeChange={setThemeId}
         isStatic={isStaticMode}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
       <div className="diagram-panel">
         {renderDiagram()}
