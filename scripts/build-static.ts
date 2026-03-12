@@ -99,6 +99,11 @@ function main() {
       process.exit(result.status ?? 1);
     }
 
+    // 6. Copy diagram JSON alongside index.html
+    const jsonOutputPath = path.join(resolvedOutputDir, "diagram.json");
+    fs.writeFileSync(jsonOutputPath, diagramJson);
+    console.log(`Diagram JSON copied to: ${jsonOutputPath}`);
+
     console.log(`\nStatic diagram exported to: ${resolvedOutputDir}/`);
     console.log("Open index.html in a browser to view the diagram.");
   } finally {
