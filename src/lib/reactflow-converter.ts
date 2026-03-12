@@ -62,7 +62,7 @@ export async function convertGraphToFlow(source: string, theme: DiagramTheme = g
       id: node.id,
       position,
       ...(node.description ? { type: "describedNode" } : {}),
-      data: { label: node.label, description: node.description, color: theme.node.bgColor },
+      data: { label: node.label, description: node.description, color: theme.node.bgColor, descriptionColor: theme.edge.labelColor },
       ...(groupId ? { parentId: groupId } : {}),
       measured: { width: pos.width, height: pos.height },
       style: {

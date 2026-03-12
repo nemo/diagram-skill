@@ -35,7 +35,7 @@ function LabeledGroupNode({ data }: NodeProps) {
 }
 
 function DescribedNode({ data }: NodeProps) {
-  const { label, description } = data as { label?: string; description?: string };
+  const { label, description, descriptionColor } = data as { label?: string; description?: string; descriptionColor?: string };
   return (
     <div
       style={{
@@ -55,7 +55,7 @@ function DescribedNode({ data }: NodeProps) {
         <div
           style={{
             fontSize: 11,
-            color: "#666",
+            color: descriptionColor ?? "#666",
             marginTop: 4,
             lineHeight: 1.3,
             textAlign: "center",
