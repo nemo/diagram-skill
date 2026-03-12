@@ -53,6 +53,9 @@ function buildSkeletons(
   for (const node of nodes) {
     const pos = positions.get(node.id);
     if (!pos) continue;
+    const labelText = node.description
+      ? `${node.label}\n${node.description}`
+      : node.label;
     out.push({
       type: "rectangle",
       id: node.id,
@@ -66,8 +69,8 @@ function buildSkeletons(
       strokeWidth: theme.node.strokeWidth,
       roundness: theme.node.borderRadius > 0 ? { type: 3 } : null,
       label: {
-        text: node.label,
-        fontSize: NODE_FONT_SIZE,
+        text: labelText,
+        fontSize: node.description ? 16 : NODE_FONT_SIZE,
       },
     });
   }

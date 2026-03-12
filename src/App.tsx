@@ -6,6 +6,7 @@ import { FlowViewer } from "./components/FlowViewer";
 import { ErrorDisplay } from "./components/ErrorDisplay";
 import { LoadingDisplay } from "./components/LoadingDisplay";
 import { HistorySidebar } from "./components/HistorySidebar";
+import { INLINE_DIAGRAM_JSON } from "./lib/inline-data";
 
 function getInitialRenderer(): RendererType {
   const params = new URLSearchParams(window.location.search);
@@ -18,6 +19,7 @@ export default function App() {
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
   const [sourceOverride, setSourceOverride] = useState<string | null>(null);
   const { themeId, theme, setThemeId } = useTheme();
+  const isStaticMode = INLINE_DIAGRAM_JSON != null;
 
   const { data, error, loading, diagramSource } = useDiagram(renderer, sourceOverride, theme);
 
@@ -69,6 +71,7 @@ export default function App() {
         onRendererChange={setRenderer}
         themeId={themeId}
         onThemeChange={setThemeId}
+        isStatic={isStaticMode}
       />
       <div className="diagram-panel">
         {renderDiagram()}
