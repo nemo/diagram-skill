@@ -60,33 +60,16 @@ export default function App() {
   };
 
   return (
-    <div className={isStaticMode ? "app-layout app-layout--static" : "app-layout"}>
-      {!isStaticMode && (
-        <HistorySidebar
-          activeId={activeDiagramId}
-          onLoad={handleLoad}
-          onLoadLive={handleLoadLive}
-          renderer={renderer}
-          onRendererChange={setRenderer}
-        />
-      )}
+    <div className="app-layout">
+      <HistorySidebar
+        activeId={activeDiagramId}
+        onLoad={handleLoad}
+        onLoadLive={handleLoadLive}
+        renderer={renderer}
+        onRendererChange={setRenderer}
+        isStatic={isStaticMode}
+      />
       <div className="diagram-panel">
-        {isStaticMode && (
-          <div className="static-renderer-toggle">
-            <button
-              className={`toggle-btn ${renderer === "flow" ? "active" : ""}`}
-              onClick={() => setRenderer("flow")}
-            >
-              React Flow
-            </button>
-            <button
-              className={`toggle-btn ${renderer === "excalidraw" ? "active" : ""}`}
-              onClick={() => setRenderer("excalidraw")}
-            >
-              Excalidraw
-            </button>
-          </div>
-        )}
         {renderDiagram()}
       </div>
     </div>

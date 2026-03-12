@@ -5,7 +5,7 @@ import path from "node:path";
 // ─── CLI argument parsing ────────────────────────────────────────────
 
 function parseArgs(args: string[]): { outputDir: string; diagramPath: string } {
-  let outputDir = "dist";
+  let outputDir = "latest-diagram";
   let diagramPath = "diagram.json";
 
   for (let i = 0; i < args.length; i++) {
@@ -18,7 +18,7 @@ function parseArgs(args: string[]): { outputDir: string; diagramPath: string } {
 Usage: npm run build:static -- [options]
 
 Options:
-  -o, --output <dir>      Output directory (default: "dist")
+  -o, --output <dir>      Output directory (default: "latest-diagram")
   -d, --diagram <file>    Path to diagram.json (default: "diagram.json")
   -h, --help              Show this help message
 
